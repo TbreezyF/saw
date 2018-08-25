@@ -1,0 +1,30 @@
+{
+    "name": "sproft-media",
+    "version": "1.0.0",
+    "description": "Main webfront",
+    "main": "App.js",
+    "scripts": {
+        "start": "node App.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "Digital",
+        "Agency"
+    ],
+    "author": "Sproft Media",
+    "license": "ISC",
+    "dependencies": {
+        "aws-sdk": "^2.297.0",
+        "bcrypt": "^3.0.0",
+        "body-parser": "^1.18.3",
+        "cookie-parser": "^1.4.3",
+        "dotenv": "^6.0.0",
+        "ejs": "^2.6.1",
+        "express": "^4.16.3",
+        "html-to-text": "^4.0.0",
+        "jsonwebtoken": "^8.3.0",
+        "nodemailer": "^4.6.8",
+        "sendmail": "^1.4.1",
+        "uuid": "^3.3.2"
+    }
+}
