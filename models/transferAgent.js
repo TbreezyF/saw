@@ -27,10 +27,8 @@ module.exports = {
                     keySelector: 'sms'
                 },
                 silent: false,
-                devPort: 2525,
-                devHost: 'localhost',
-                smtpPort: 2525,
-                smtpHost: 'localhost'
+                smtpPort: 465,
+                smtpHost: 'sproft.com'
             });
 
             mta(message, async function(err, response){
