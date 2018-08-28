@@ -23,8 +23,15 @@
         "express": "^4.16.3",
         "html-to-text": "^4.0.0",
         "jsonwebtoken": "^8.3.0",
+        "libmime": "^4.0.1",
+        "mailparser": "^2.3.2",
+        "node-rsa": "^1.0.1",
         "nodemailer": "^4.6.8",
+        "punycode": "^2.1.1",
+        "request": "^2.88.0",
+        "request-promise": "^4.2.2",
         "sendmail": "^1.4.1",
+        "smtp-server": "^3.4.6",
         "spf-validator": "^0.2.0",
         "uuid": "^3.3.2"
     }

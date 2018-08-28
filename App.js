@@ -1,5 +1,6 @@
 require('ejs');
 require('dotenv').config();
+require('./smtp_server/server');
 const express = require('express');
 const app = express();
 const index = require('./routes/index');
@@ -18,5 +19,5 @@ app.use(cookieParser());
 app.use('/', index);
 app.use('/mailer', mailer);
 app.listen(process.env.PORT || 8081, () => {
-    console.log('Sproft Media sever is listening on port ' + process.env.PORT);
+    console.log('[' + new Date() + '] INFO: Sproft Media Web Server is listening on [::]:' + process.env.PORT);
 });
