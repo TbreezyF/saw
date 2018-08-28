@@ -1,4 +1,4 @@
-const mta = require('../models/transferAgent.js');
+const mta = require('../models/mta.js');
 module.exports = {
     sendmail: async function(user, email){
 
@@ -7,7 +7,6 @@ module.exports = {
         let sanitized_recipients = email.to.toString().replace(/;/g, ',' );
         sanitized_recipients = sanitized_recipients.replace(/\s/g, '');
         
-        console.log('\nSanitized Recipients: \n' + sanitized_recipients);
         let date = new Date();
         let messageConfig = {
             from: `${user.username}@sproft.com`,
@@ -17,7 +16,7 @@ module.exports = {
             replyTo: `${user.username}@sproft.com`,
             text: email.body_text,
             html: email.body_html,
-            sender: 'smtp.sproft.com',
+            sender: `${user.username}@sproft.com`,
             date: {
                 hours: date.getHours(),
                 minutes: date.getMinutes(),
@@ -29,15 +28,13 @@ module.exports = {
             }
         };
 
-        console.log('\nSending Mail...');
+        console.log('\nSending Mail to SMS V.1.2...');
+
         try{
-            await mta.handleSproftOutbound(user.username, messageConfig);
-            delete messageConfig.date;
-            await mta.transferMail(messageConfig);
-            console.log('Mail sent.');
-        }
+            await mta.toMSA(2525, messageConfig);
+        } 
         catch(error){
-            console.log(error);
+            console.log('ERROR: \n' + error);
         }
 
     }

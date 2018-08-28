@@ -147,7 +147,7 @@
                                             </td>
                                             <%}%>
                                             <td class="mailbox-attachment"></td>
-                                            <td class="mailbox-date"><%=mailbox[i].date.hours%>:<%=mailbox[i].date.minutes%></td>
+                                            <td class="mailbox-date"><%=mailbox[i].sproftDate.hours%>:<%if(mailbox[i].sproftDate.minutes < 10){%>document.write('0')<%}%><%=mailbox[i].sproftDate.minutes%></td>
                                         </tr>
                                         <%}%>
                                         <%}else{%>

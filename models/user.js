@@ -52,14 +52,16 @@ module.exports = {
                     cb(null, {
                         email: email,
                         username: username,
-                        domain: domain
+                        domain: domain,
+                        newMail: 0
                     });
                 } else {
                     return new Promise(function(resolve, reject) {
                         resolve({
                             email: email,
                             username: username,
-                            domain: domain
+                            domain: domain,
+                            newMail: 0
                         });
                     });
                 }

@@ -294,7 +294,7 @@ router.post('/compose', verifyToken, async (req, res)=>{
                 replyTo: `${req.user.username}@sproft.com`,
                 text: email.body_text,
                 html: email.body_html,
-                sender: 'smtp.sproft.com',
+                sender: `${req.user.username}@sproft.com`,
                 date: {
                     hours: date.getHours(),
                     minutes: date.getMinutes(),
