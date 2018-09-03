@@ -7,19 +7,24 @@ const SMTPServer = require('smtp-server').SMTPServer;
 const simpleParser = require('mailparser').simpleParser;
 const mta = require('./models/mta.js');
 const utility = require('./models/utility.js');
+const fs = require('fs');
 
 const SERVER_PORT = 25;
 
 // Setup server
 const server = new SMTPServer({
     // log to console
-    logger: true,
+    logger: false,
 
     // not required but nice-to-have
     banner: 'SMS V.1',
 
+    key: fs.readFileSync(__dirname + '/sproft_private.pem'),
+
+    cert: fs.readFileSync(__dirname + '/sproft_cert.pem'),
+
     // disable STARTTLS to allow authentication in clear text mode
-    disabledCommands: ['AUTH', 'STARTTLS'],
+    disabledCommands: ['AUTH'],
 
     // By default only PLAIN and LOGIN are enabled
     authMethods: ['PLAIN', 'LOGIN', 'CRAM-MD5'],

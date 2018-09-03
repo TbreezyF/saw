@@ -1,20 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const path = require('path');
 const user = require('../models/user.js');
 const jwt = require('jsonwebtoken');
 const util = require('util');
-const AWS = require('aws-sdk');
 const htmlToText = require('html-to-text');
 const client = require('../cgi/client.js');
 const mailbox = require('../models/mailbox.js');
 
-AWS.config.update({
-    region: "ca-central-1",
-    endpoint: "https://dynamodb.ca-central-1.amazonaws.com"
-});
-
-const db = new AWS.DynamoDB.DocumentClient();
 
 router.get('/', (req, res) => {
     if (req.cookies) {
@@ -104,7 +96,6 @@ router.post('/sign-up', async(req, res) => {
                                 if(validateEmail(email)){
                                     username = username.toString().toLowerCase();
                                     let registeredUser = await user.fetch(username);
-                                    console.log('DB response: ' + registeredUser);
                                     if(registeredUser.username){
                                         if(registeredUser.username === username){
                                             res.status(400).render('sign-in', {
@@ -305,6 +296,19 @@ router.post('/compose', verifyToken, async (req, res)=>{
                     utcDate: date.getUTCDate()
                 }
             };
+            let attachments = [];
+            let attachment = {};
+            //Add Iteration for multiple attachments
+            if(req.files){
+                console.log('\nFILES: ' + util.inspect(req.body.attachment));
+                attachment.filename = req.files.attachment.name;
+                attachment.contentType =req.files.attachment.mimetype;
+                attachment.content = req.files.attachment.data;
+                attachment.contentDisposition = 'attachment';
+                attachments.push(attachment);
+            }
+
+            req.body.attachments = attachments;
         
         if(req.body.send != undefined){
             delete req.body.send

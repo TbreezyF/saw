@@ -4,7 +4,7 @@ const MailComposer = require('nodemailer/lib/mail-composer');
 const util = require('util');
 const fs = require('fs');
 const utility = require('./utility.js');
-const transporter = require('sendmail');
+const transporter = require('./sendmail.js');
 
 module.exports = {
     toMSA: async function(port, email){
@@ -14,7 +14,6 @@ module.exports = {
             }
             let connectionOptions = {
                 port: port,
-                host: 'mx.sproft.com',
                 logger: false,
                 debug: false,
                 authMethod: 'PLAIN'
@@ -64,6 +63,7 @@ module.exports = {
               privateKey: fs.readFileSync(__dirname + '/dkim-private.pem', 'utf8'),
               keySelector: '1535443268.sproft'
             },
+            devPort: 25,
             smtpPort: port // Default: 25
           });
 

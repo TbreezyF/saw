@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const saltRounds = 12;
 const AWS = require('aws-sdk');
 const util = require('util');
@@ -52,14 +52,16 @@ module.exports = {
                     cb(null, {
                         email: email,
                         username: username,
-                        domain: domain
+                        domain: domain,
+                        newMail: 0
                     });
                 } else {
                     return new Promise(function(resolve, reject) {
                         resolve({
                             email: email,
                             username: username,
-                            domain: domain
+                            domain: domain,
+                            newMail: 0
                         });
                     });
                 }
@@ -124,7 +126,7 @@ module.exports = {
                 if (userInfo.Item) {
                     console.log('\nUser found...');
                     let hash = userInfo.Item.password;
-                    if (await bcrypt.compare(password, hash)) {
+                    if (bcrypt.compareSync(password, hash)) {
                         if (cb) {
                             console.log('\nUser credentials verified.');
                             cb(null, {
@@ -143,9 +145,21 @@ module.exports = {
                             });
                         }
                     }
+                    else{
+                        if (cb) {
+                            cb(new Error('Invalid Credentials.'));
+                            console.log('\nAuthentication failed.');
+                        } else {
+                            return new Promise(function(resolve, reject) {
+                                reject(new Error('User not found'));
+                                console.log('\nAuthentication failed.');
+                            });
+                        }
+
+                    }
                 } else {
                     if (cb) {
-                        cb(new Error('User not found.'));
+                        cb(new Error('Invalid Credentials.'));
                         console.log('\nAuthentication failed.');
                     } else {
                         return new Promise(function(resolve, reject) {
@@ -168,10 +182,10 @@ module.exports = {
 
         } else {
             if (cb) {
-                cb(new Error('User email must be provided'));
+                cb(new Error('Username must be provided'));
             } else {
                 return new Promise(function(resolve, reject) {
-                    reject(new Error('User email must be provided'));
+                    reject(new Error('Username must be provided'));
                 })
             }
         }

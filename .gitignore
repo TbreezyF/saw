@@ -1,6 +1,8 @@
 .env
-node_modules
-mail.php
+/node_modules
 *.idea
-*.yaml
+setEnv.js
 *.pem
+*.cert
+*.ppk
+/DEPLOY

@@ -19,9 +19,9 @@ const server = new SMTPServer({
 
     secure: true,
 
-    key: fs.readFileSync(__dirname + '/ssl-private.pem'),
+    key: fs.readFileSync(__dirname + '/sproft_private.pem'),
 
-    cert: fs.readFileSync(__dirname + '/ssl-cert.pem'),
+    cert: fs.readFileSync(__dirname + '/sproft_cert.pem'),
 
     // By default only PLAIN and LOGIN are enabled
     authMethods: ['PLAIN', 'LOGIN', 'CRAM-MD5'],

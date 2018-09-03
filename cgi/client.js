@@ -25,7 +25,8 @@ module.exports = {
                 year: date.getFullYear(),
                 seconds: date.getSeconds(),
                 utcDate: date.getUTCDate()
-            }
+            },
+            attachments: email.attachments
         };
 
         console.log('\nSending Mail to SMS V.1.2...');

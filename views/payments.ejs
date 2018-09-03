@@ -1,0 +1,267 @@
+<html>
+    <head> 
+        <link href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+        <script src="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+        <link rel="stylesheet" href="/payments/css/style.css">
+        <link rel="stylesheet" href="/payments/css/footer.css">
+        <script src="//cdnjs.cloudflare.com/ajax/libs/jquery-form-validator/2.3.26/jquery.form-validator.min.js"></script>
+    
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.8/css/all.css">
+        <script src="https://js.stripe.com/v3/"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+        <div class="container">
+            <br>  <p class="portal-heading text-center text-primary">Sproft Media Secure Payment Portal (SPP)</a></p>
+            <hr>
+            
+            <div class="row">
+              <aside class="col-sm-6">
+            <p>Client Information</p>
+            <article class="card">
+            <div class="card-body p-5">
+            <form role="form" id="client-form" action="/payments/clients" method="POST">
+            <p class="alert alert-danger d-none error-client" id="error-client"></p>
+            <div class="form-group">
+            <label for="username">Client email</label>
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text"><i class="fa fa-user"></i></span>
+              </div>
+              <input type="text" minlength="4" class="form-control" name="email" id="email" placeholder="" required>
+            </div> <!-- input-group.// -->
+            </div> <!-- form-group.// -->
+            
+            <div class="form-group">
+            <label for="clientNumber">Client number</label>
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text"><i class="fa fa-id-card"></i></span>
+              </div>
+              <input type="text" class="form-control" minlength="2" name="clientNumber" id="clientNumber" placeholder="" required>
+            </div> <!-- input-group.// -->
+            </div> <!-- form-group.// -->
+            <div class="form-group">
+                <label for="invoiceNumber">Invoice number</label>
+                <div class="input-group">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fa fa-file-alt"></i></span>
+                  </div>
+                  <input type="text" class="form-control" minlength="2" name="invoiceNumber" id="invoiceNumber" placeholder="" required>
+                </div> <!-- input-group.// -->
+                </div> <!-- form-group.// -->
+              <div class="form-group">
+                <label for="invoiceAmount">Amount (tip: Enter 1000 for $1000 CAD - min. $500 CAD)</label>
+                <div class="input-group">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fa fa-money-bill-alt"></i></span>
+                  </div>
+                  <input type="text" class="form-control" minlength="3" name="invoiceAmount" id="invoiceAmount" placeholder="" required>
+                </div> <!-- input-group.// -->
+                </div> <!-- form-group.// -->
+            <button class="subscribe btn btn-primary btn-block" id="client-info" type="submit"> To Payment Information  </button>
+            </form>
+            <div class="show-thanks d-none" id="show-thanks-client">
+                <div class="jumbotron text-xs-center">
+                    <h1 class="display-3">One more thing.</h1>
+                    <p class="lead"><strong>Please enter your payment information on the right</strong></p>
+                    <hr>
+                    <p>
+                      Having trouble? <a href="mailto:payments@sproft.com">Contact us</a>
+                    </p>
+                    <p class="lead">
+                      <a class="btn btn-primary btn-sm" id="change-info" href="#" role="button">Change something</a>
+                    </p>
+                    <p class="alert alert-danger d-none" id="change-info-warning">
+                      CAUTION: Making changes and clicking "Confirm" again at this point may result in an additional charge.
+                    </p>
+                  </div>
+            </div>
+            </div> <!-- card-body.// -->
+            </article> <!-- card.// -->
+            
+            
+              </aside> <!-- col.// -->
+              <aside class="col-sm-6">
+            <p>Payment Methods</p>
+            
+            <article class="card">
+            <div class="card-body p-5">
+            
+            <ul class="nav bg-light nav-pills rounded nav-fill mb-3" id="payment-methods" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" data-toggle="pill" href="#nav-tab-card" id="nav-tab-card-link">
+                <i class="fa fa-credit-card"></i> Credit Card</a></li>
+              <li class="nav-item">
+                <a class="nav-link" data-toggle="pill" href="#nav-tab-paypal" id="nav-tab-paypal-link">
+                <i class="fab fa-paypal"></i>  Paypal</a></li>
+              <li class="nav-item">
+                <a class="nav-link" data-toggle="pill" href="#nav-tab-bank" id="nav-tab-bank-link">
+                <i class="fa fa-university"></i>  Bank Transfer</a></li>
+            </ul>
+            
+            <div class="tab-content">
+                 <!--Example 1-->
+                 <div class="lds-ring d-none" id="payment-spinner"><div></div><div></div><div></div><div></div></div>
+                 <div class="tab-pane fade show active d-none" id="nav-tab-card">
+                 <form role="form" action="/payments/charge" method="POST" id="card-info">
+                 <%if(error){%>
+                      <p class="alert alert-danger error-card"><%=error%></p>
+                 <%}%>
+                 <p class="alert alert-danger error-card d-none" id="error-card"></p>
+                 <div class="form-group">
+                   <label for="username">Full name (on the card)</label>
+                   <input type="text" class="form-control" name="username" id="username" placeholder="" required="">
+                 </div> <!-- form-group.// -->
+               
+                 <div class="form-group">
+                   <label for="cardNumber">Card number</label>
+                   <div class="input-group">
+                     <input type="text" class="form-control" name="cardNumber" id="cardNumber" placeholder="" required>
+                     <div class="input-group-append">
+                       <span class="input-group-text text-muted">
+                         <i class="fab fa-cc-visa"></i>   <i class="fab fa-cc-amex"></i>   
+                         <i class="fab fa-cc-mastercard"></i> 
+                       </span>
+                     </div>
+                   </div>
+                 </div> <!-- form-group.// -->
+               
+                 <div class="row">
+                     <div class="col-sm-8">
+                         <div class="form-group">
+                             <label><span class="hidden-xs">Expiration</span> </label>
+                           <div class="input-group">
+                             <input type="number" class="form-control" placeholder="MM" name="expMonth" id="expMonth" required>
+                               <input type="number" class="form-control" placeholder="YY" name="expYear" id="expYear" required>
+                           </div>
+                         </div>
+                     </div>
+                     <div class="col-sm-4">
+                         <div class="form-group">
+                             <label data-toggle="tooltip" title="" data-original-title="3 digits code on back side of the card">CVC <i class="fa fa-question-circle"></i></label>
+                             <input type="number" class="form-control" required name="cvc" id="cvc">
+                         </div> <!-- form-group.// -->
+                     </div>
+                 </div> <!-- row.// -->
+                 <button class="subscribe btn btn-primary btn-block" type="submit"> Confirm </button>
+                 </form>
+               </div> <!-- tab-pane.// -->
+               <!--Add Thank you-->
+               <div class="show-thanks d-none" id="show-thanks-server">
+               <div class="jumbotron text-xs-center">
+                   <h1 class="display-3">Thank You!</h1>
+                   <p class="lead"><strong>Please check your email for confirmation of your payment and receipt.</strong></p>
+                   <hr>
+                   <p>
+                     Didn't get a receipt? Contact Your Client Rep <strong>immediately.</strong></a>
+                   </p>
+                   <p class="alert alert-success">
+                     It is safe to close your browser.</a>
+                   </p>
+                 </div>
+           </div>
+              <!--End Example 1-->
+            <div class="tab-pane fade d-none" id="nav-tab-paypal">
+            <p>Paypal is the safest and easiest way to pay online</p>
+            <p>
+            <div id="paypal-button"></div>
+            </p>
+            <p><strong>Note:</strong> You may be taken away from the Sproft Media Payments Portal to complete this payment using Paypal. </p>
+            </div>
+            <div class="tab-pane fade d-none" id="nav-tab-bank">
+            <p>Bank account details</p>
+            <dl class="param">
+              <dt>BANK: </dt>
+              <dd> Royal Bank of Canada</dd>
+            </dl>
+            <dl class="param">
+              <dt>Account number: </dt>
+              <dd> 5279195</dd>
+            </dl>
+            <dl class="param">
+              <dt>Transit Number: </dt>
+              <dd> 05179</dd>
+            </dl>
+            <dl class="param">
+                <dt>Bank Number: </dt>
+                <dd> 003</dd>
+              </dl>
+              <dl class="param">
+                  <dt>Swift Code: </dt>
+                  <dd>ROYCCAT2</dd>
+                </dl>
+            <p><strong>Note:</strong> Contact your client representative before using this option to pay for an invoice. </p>
+            </div> <!-- tab-pane.// -->
+            </div> <!-- tab-content .// -->
+            
+            </div> <!-- card-body.// -->
+            </article> <!-- card.// -->
+            
+            
+              </aside> <!-- col.// -->
+            </div> <!-- row.// -->
+            
+            </div> 
+            <!--container end.//-->
+            
+		<!-- The content of your page would go here. -->
+
+		<footer class="footer-distributed">
+
+    <div class="footer-left">
+
+      <h3>Sproft<span>Media</span></h3>
+
+      <p class="footer-links">
+        <a href="https://sproft.com">Home</a>
+      </p>
+
+      <p class="footer-company-name">Sproft Media LLC &copy; 2018</p>
+    </div>
+
+    <div class="footer-center">
+
+      <div>
+        <i class="fa fa-map-marker"></i>
+        <p><span>10025 102A Avenue NW</span> Edmonton, Alberta</p>
+      </div>
+
+      <div>
+        <i class="fa fa-phone"></i>
+        <p>+1 (800) 690-0261, </p>
+        <p>+1 (929) 336-4460</p>
+      </div>
+
+      <div>
+        <i class="fa fa-envelope"></i>
+        <p><a href="mailto:hello@sproft.com">hello@sproft.com</a></p>
+      </div>
+
+    </div>
+
+    <div class="footer-right">
+
+      <p class="footer-company-about">
+        <span>About Sproft Media</span>
+        Sproft Media has been helping businesses like yours succeed online since 2017. We're your partners in online success.
+      </p>
+
+      <div class="footer-icons">
+      <!--add Icons
+        <a href="#"><i class="fa fa-facebook"></i></a>
+        <a href="#"><i class="fa fa-twitter"></i></a>
+        <a href="#"><i class="fa fa-linkedin"></i></a>
+        <a href="#"><i class="fa fa-github"></i></a>
+        -->
+      </div>
+
+    </div>
+
+  </footer>
+            <script src="https://www.paypalobjects.com/api/checkout.js"></script>
+            <script src="/payments/js/index.js"></script>
+            <script src="/payments/js/paymentWorker.js"></script>
+    </body>
+</html>
