@@ -7,7 +7,7 @@ const mta = require('./models/mta.js');
 const fs = require('fs');
 const utility = require('./models/utility.js');
 
-const SERVER_PORT = 465;
+const SERVER_PORT = 587;
 
 // Setup server
 const server = new SMTPServer({
@@ -120,7 +120,7 @@ const server = new SMTPServer({
             message = utility._cleanMail(message, 'bcc');
             console.log('\nMail is authorized, transfering to MTA...');
             try{
-                await mta.toMTA(587, utility._parseMailObject(message));
+                await mta.toMTA(465, utility._parseMailObject(message));
                 console.log('\nTransfer completed.');
                 await mta.toSentItems(utility._getSproftUser(mail.from.text), utility._parseMailForSproft(mail));
             }

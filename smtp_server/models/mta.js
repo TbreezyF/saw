@@ -68,7 +68,6 @@ module.exports = {
           });
 
           console.log('\ntransfering...');
-          console.dir(email);
           agent(email, function(err, res){
             if(err){
                 console.log('\nERROR sending mail:\n' + err);

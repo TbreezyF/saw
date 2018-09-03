@@ -131,8 +131,8 @@ module.exports = function (options) {
 
       let connection = new SMTPConnection({
           port: smtpPort,
-          host: 'localhost',
-          //name: 'sproft.com',
+          host: destHost,
+          name: 'sproft.com',
           secure: false,
           opportunisticTLS: true,
           tls: {

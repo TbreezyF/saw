@@ -17,11 +17,13 @@ const server = new SMTPServer({
     // not required but nice-to-have
     banner: 'SMS V.3',
 
-    secure: true,
+    secure: false,
 
     key: fs.readFileSync(__dirname + '/sproft_private.pem'),
 
     cert: fs.readFileSync(__dirname + '/sproft_cert.pem'),
+
+    disabledCommands: ['AUTH'],
 
     // By default only PLAIN and LOGIN are enabled
     authMethods: ['PLAIN', 'LOGIN', 'CRAM-MD5'],
