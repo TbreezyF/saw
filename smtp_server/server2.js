@@ -2,19 +2,20 @@
 require('dotenv').config();
 const SMTPServer = require('smtp-server').SMTPServer;
 const simpleParser = require('mailparser').simpleParser;
+const user = require('./models/user.js');
 const mta = require('./models/mta.js');
-const utility = require('./models/utility.js');
 const fs = require('fs');
+const utility = require('./models/utility.js');
 
 const SERVER_PORT = 587;
 
 // Setup server
 const server = new SMTPServer({
     // log to console
-    logger: false,
+    logger: true,
 
     // not required but nice-to-have
-    banner: 'SMS V.1',
+    banner: 'SMS V.3',
 
     secure: true,
 
@@ -22,14 +23,13 @@ const server = new SMTPServer({
 
     cert: fs.readFileSync(__dirname + '/sproft_cert.pem'),
 
-    // disable STARTTLS to allow authentication in clear text mode
-    disabledCommands: ['AUTH'],
-
     // By default only PLAIN and LOGIN are enabled
     authMethods: ['PLAIN', 'LOGIN', 'CRAM-MD5'],
 
     // Accept messages up to 10 MB
     size: 10 * 1024 * 1024,
+
+    authOptional: true,
 
     // allow overriding connection properties. Only makes sense behind proxy
     useXClient: true,
@@ -42,7 +42,32 @@ const server = new SMTPServer({
     // Setup authentication
     // Allow only users with username 'testuser' and password 'testpass'
     onAuth(auth, session, callback) {
-        callback();
+        // Check if auth request if from Sproft Mail Client
+        let username = process.env.SERVER_USER;
+        let password = process.env.SERVER_PASS
+        if (
+            auth.username === username &&
+            (auth.method === 'CRAM-MD5' ?
+                auth.validatePassword(password) // if cram-md5, validate challenge response
+                :
+                auth.password === password) // for other methods match plaintext passwords
+        ) {
+            return callback(null, {
+                user: session.id // value could be an user id, or an user object etc. This value can be accessed from session.user afterwards
+            });
+        }
+
+        //Request is from a different mail client - User must be a sproft user to submit mail on this server.
+        let authenticated = (async function(){
+            await user.authenticate(auth.username, auth.password);
+        })();
+
+        if(authenticated && authenticated.username){
+            return callback(null, {
+                user: session.id // value could be an user id, or an user object etc. This value can be accessed from session.user afterwards
+            });  
+        }
+        return callback(new Error('Authentication failed'));
     },
 
     // Validate MAIL FROM envelope address. Example allows all addresses that do not start with 'deny'
@@ -51,7 +76,7 @@ const server = new SMTPServer({
         if(!(utility._validateEmail(address.address))){
             return callback(new Error('Invalid address type.'));
         }
-        callback();
+        callback();   
     },
 
     // Validate RCPT TO envelope address. Example allows all addresses that do not start with 'deny'
