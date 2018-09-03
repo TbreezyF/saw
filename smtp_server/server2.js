@@ -2,20 +2,19 @@
 require('dotenv').config();
 const SMTPServer = require('smtp-server').SMTPServer;
 const simpleParser = require('mailparser').simpleParser;
-const user = require('./models/user.js');
 const mta = require('./models/mta.js');
-const fs = require('fs');
 const utility = require('./models/utility.js');
+const fs = require('fs');
 
 const SERVER_PORT = 587;
 
 // Setup server
 const server = new SMTPServer({
     // log to console
-    logger: true,
+    logger: false,
 
     // not required but nice-to-have
-    banner: 'SMS V.2',
+    banner: 'SMS V.1',
 
     secure: true,
 
@@ -23,13 +22,14 @@ const server = new SMTPServer({
 
     cert: fs.readFileSync(__dirname + '/sproft_cert.pem'),
 
+    // disable STARTTLS to allow authentication in clear text mode
+    disabledCommands: ['AUTH'],
+
     // By default only PLAIN and LOGIN are enabled
     authMethods: ['PLAIN', 'LOGIN', 'CRAM-MD5'],
 
     // Accept messages up to 10 MB
     size: 10 * 1024 * 1024,
-
-    authOptional: false,
 
     // allow overriding connection properties. Only makes sense behind proxy
     useXClient: true,
@@ -42,61 +42,21 @@ const server = new SMTPServer({
     // Setup authentication
     // Allow only users with username 'testuser' and password 'testpass'
     onAuth(auth, session, callback) {
-        // Check if auth request if from Sproft Mail Client
-        let username = process.env.SERVER_USER;
-        let password = process.env.SERVER_PASS
-        if (
-            auth.username === username &&
-            (auth.method === 'CRAM-MD5' ?
-                auth.validatePassword(password) // if cram-md5, validate challenge response
-                :
-                auth.password === password) // for other methods match plaintext passwords
-        ) {
-            return callback(null, {
-                user: session.id // value could be an user id, or an user object etc. This value can be accessed from session.user afterwards
-            });
-        }
-
-        //Request is from a different mail client - User must be a sproft user to submit mail on this server.
-        let authenticated = (async function(){
-            await user.authenticate(auth.username, auth.password);
-        })();
-
-        if(authenticated && authenticated.username){
-            return callback(null, {
-                user: session.id // value could be an user id, or an user object etc. This value can be accessed from session.user afterwards
-            });  
-        }
-        return callback(new Error('Authentication failed'));
+        callback();
     },
 
     // Validate MAIL FROM envelope address. Example allows all addresses that do not start with 'deny'
     // If this method is not set, all addresses are allowed
     onMailFrom(address, session, callback) {
-        if(!session.user){
-            return callback(new Error('Authentication required.'));
+        if(!(utility._validateEmail(address.address))){
+            return callback(new Error('Invalid address type.'));
         }
-        if(address.address){
-            if(!(utility._validateEmail(address.address))) return callback(new Error('Invalid address type.'));
-            if (utility._getHost(address.address) === 'sproft.com') {
-                if(utility._verifiedUser(address.address)){
-                    return callback();
-                }
-                return callback(new Error('Not accepted'));
-            }
-            else{
-                return callback(new Error('Not accepted'));
-            }
-        }
-        return callback(new Error('Cannot accept incomplete addresses or unknown formats.'));
+        callback();
     },
 
     // Validate RCPT TO envelope address. Example allows all addresses that do not start with 'deny'
     // If this method is not set, all addresses are allowed
     onRcptTo(address, session, callback) {
-        if(!session.user){
-            return callback(new Error('Authentication required.'));
-        }
         if(!(utility._validateEmail(address.address))){
             return callback(new Error('Invalid address type.'));
         }
@@ -105,37 +65,80 @@ const server = new SMTPServer({
 
     // Handle message stream
     onData(stream, session, callback) {
-        if(!session.user){
-            return callback(new Error('Authentication required.'));
-        }
-        simpleParser(stream, async (err, mail)=>{
-            if(err){
-                console.log('\nERROR: Error parsing mail \n' + err);
-                callback(new Error('Invalid Mail Format.'));
-            }
-
-            let message = {};
-            message = utility._cleanMail(mail);
-            message = utility._cleanMail(message, 'cc');
-            message = utility._cleanMail(message, 'bcc');
-            console.log('\nMail is authorized, transfering to MTA...');
-            try{
-                await mta.toMTA(25, utility._parseMailObject(message));
-                console.log('\nTransfer completed.');
-                await mta.toSentItems(utility._getSproftUser(mail.from.text), utility._parseMailForSproft(mail));
-            }
-            catch(error){
-                console.log('\nMTA ERROR: \n' + error);
-            }
+        let message = '';
+        stream.on('data', (chunk)=>{
+            message += chunk;
         });
-        stream.on('end', () => {
+        stream.on('end', async () => {
             let err;
             if (stream.sizeExceeded) {
                 err = new Error('Error: message exceeds fixed maximum message size 10 MB');
                 err.responseCode = 552;
                 return callback(err);
             }
+
             callback(null, 'Message queued'); // accept the message once the stream is ended
+            let mail = await simpleParser(message);
+            let received = `Received:  from ${session.remoteAddress} by 
+            ${utility._getHost(mail.from.text)} (${session.remoteAddress}) with ESMTPS id ${mail.messageId} for <${mail.to.text}>; ${new Date()}`;
+            let domain;
+            if(mail.from){
+                domain = utility._getHost(mail.from.text);
+            }
+
+            if(domain){
+                let score = await utility._filter(message, domain);
+                message += received;
+                let MSG = await simpleParser(message);
+                let msg = utility._parseMailForSproft(MSG);
+                let sproftUser = utility._getSproftUser(msg.to);
+                if(score < 5){
+                    //Not SPAM. Put in Inbox
+                    try{
+                        await mta.toInbox(sproftUser, msg);   
+                    }
+                    catch(error){
+                        console.log(`Could not upate ${sproftUser}'s inbox.`);
+                    }
+                }
+                else{
+                    //Place in Spam folder
+                    try{
+                        await mta.toSpam(sproftUser, msg);   
+                    }
+                    catch(error){
+                        console.log(`Could not upate ${sproftUser}'s spam box.`);
+                    }
+                    
+                }
+            }
+            else{
+                let score = await utility._filter(message, '');
+                message += received;
+                let MSG = await simpleParser(message);
+                let msg = utility._parseMailForSproft(MSG);
+                let sproftUser = utility._getSproftUser(msg.to);
+                if(score < 5){
+                    //Not SPAM. Put in Inbox;
+                    try{
+                        await mta.toInbox(sproftUser, msg);   
+                    }
+                    catch(error){
+                        console.log(`Could not upate ${sproftUser}'s inbox.`);
+                    }
+                    
+                }
+                else{
+                    //Place in Spam folder
+                    try{
+                        await mta.toSpam(sproftUser, msg);   
+                    }
+                    catch(error){
+                        console.log(`Could not upate ${sproftUser}'s spam box.`);
+                    }
+                    
+                }
+            }
         });
     }
 });

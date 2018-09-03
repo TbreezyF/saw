@@ -6,3 +6,6 @@ setEnv.js
 *.cert
 *.ppk
 /DEPLOY
+*.yaml
+*.config
+*.yml

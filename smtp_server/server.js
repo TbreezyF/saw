@@ -1,8 +1,5 @@
 // Replace '../lib/smtp-server' with 'smtp-server' when running this script outside this directory
 require('dotenv').config();
-require('./server2.js');
-require('./server3.js');
-require('./server4.js');
 const SMTPServer = require('smtp-server').SMTPServer;
 const simpleParser = require('mailparser').simpleParser;
 const mta = require('./models/mta.js');
@@ -43,12 +40,18 @@ const server = new SMTPServer({
     // Setup authentication
     // Allow only users with username 'testuser' and password 'testpass'
     onAuth(auth, session, callback) {
+        if(!(utility._validateEmail(address.address))){
+            return callback(new Error('Invalid address type.'));
+        }
         callback();
     },
 
     // Validate MAIL FROM envelope address. Example allows all addresses that do not start with 'deny'
     // If this method is not set, all addresses are allowed
     onMailFrom(address, session, callback) {
+        if(!(utility._validateEmail(address.address))){
+            return callback(new Error('Invalid address type.'));
+        }
         callback();
     },
 

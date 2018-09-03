@@ -1,7 +1,9 @@
 require('./setEnv');
 require('ejs');
-require('dotenv').config();
 require('./smtp_server/server');
+require('./smtp_server/server2');
+require('./smtp_server/server3');
+require('./smtp_server/server4');
 const express = require('express');
 const app = express();
 const index = require('./routes/index');
