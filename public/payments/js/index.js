@@ -1,5 +1,5 @@
+var invoiceNumber, clientNumber, invoiceAmount;
 $(document).ready(function(){
-    var invoiceNumber, clientNumber, invoiceAmount;
 
     $('#nav-tab-paypal-link').click(function(){
       $('#show-thanks-server').addClass('d-none');
@@ -97,6 +97,8 @@ $(document).ready(function(){
               $('#nav-tab-card').removeClass('d-none');
               $('#nav-tab-paypal').removeClass('d-none');
               $('#nav-tab-bank').removeClass('d-none');
+              $('#error-paypal').addClass('d-none');
+
             }
             else if(data.error){
               //show error
@@ -112,6 +114,7 @@ $(document).ready(function(){
           $('#change-info').click(function(e){
             e.preventDefault();
 
+            $('#error-paypal').addClass('d-none');
             $('#client-form').show();
             $('#show-thanks-client').addClass('d-none');
             $('#nav-tab-card').addClass('d-none');

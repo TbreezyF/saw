@@ -115,10 +115,12 @@ const server = new SMTPServer({
 
             if(domain){
                 let score = await utility._filter(message, domain);
+                console.log('\nRETURNED SCORE: ' + score);
                 message += received;
                 let MSG = await simpleParser(message);
                 let msg = utility._parseMailForSproft(MSG);
                 let sproftUser = utility._getSproftUser(msg.to);
+                console.log('\nRECEIVING USER: ' + sproftUser);
                 if(score < 5){
                     //Not SPAM. Put in Inbox
                     try{

@@ -8,7 +8,12 @@ const util = require('util');
 module.exports = {
     _getSproftUser: function(email){
         let username;
-        username = email.toString().substring(0, email.toString().indexOf('@'));
+        if(email.toString().includes('<')){
+            username = email.toString().substring(email.toString().indexOf('<')+1, email.toString().indexOf('@'));
+        }
+        else{
+            username = email.toString().substring(0, email.toString().indexOf('@'));
+        }
         return username;
     },
     _getHost: function(email){
@@ -210,6 +215,7 @@ module.exports = {
                 }
             }
             catch(error){
+                flags -=1;
                 console.log('DKIM/SPF Validation failed.')
             }
             console.log('\nChecking for spam...\n');
@@ -234,6 +240,7 @@ module.exports = {
                 console.log('ERROR connecting to spamAssassin');
             }
             console.log('\nDone.');
+            console.log('\nSPAM SCORE: ' + flags);
             return flags;
         }
         return flags;
@@ -300,7 +307,8 @@ function _validateDKIM(email){
             console.log('\nVerifying DKIM of incoming...\n');
             DKIM.DKIMVerify(email, (err, sigs)=>{
                 if(err){
-                    console.log('\nERROR: Invalid DKIM Signature\n' + err);
+                    console.log('\nERROR: Invalid DKIM Signature\n');
+                    resolve(false);
                 }
                 if(sigs.result){
                     console.log('\nDKIM Pass\n');

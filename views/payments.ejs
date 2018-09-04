@@ -6,16 +6,19 @@
         <link rel="stylesheet" href="/payments/css/style.css">
         <link rel="stylesheet" href="/payments/css/footer.css">
         <script src="//cdnjs.cloudflare.com/ajax/libs/jquery-form-validator/2.3.26/jquery.form-validator.min.js"></script>
-    
+
+        <link rel="icon" type="image/png" href="/images/sproft_logo_favicon.png" />
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.8/css/all.css">
         <script src="https://js.stripe.com/v3/"></script>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <title>Secure Payment Portal - Sproft Media</title>
     </head>
     <body>
         <div class="container">
             <br>  <p class="portal-heading text-center text-primary">Sproft Media Secure Payment Portal (SPP)</a></p>
             <hr>
-            
+        
             <div class="row">
               <aside class="col-sm-6">
             <p>Client Information</p>
@@ -57,7 +60,7 @@
                   <div class="input-group-prepend">
                     <span class="input-group-text"><i class="fa fa-money-bill-alt"></i></span>
                   </div>
-                  <input type="text" class="form-control" minlength="3" name="invoiceAmount" id="invoiceAmount" placeholder="" required>
+                  <input type="text" class="form-control" minlength="1" name="invoiceAmount" id="invoiceAmount" placeholder="" required>
                 </div> <!-- input-group.// -->
                 </div> <!-- form-group.// -->
             <button class="subscribe btn btn-primary btn-block" id="client-info" type="submit"> To Payment Information  </button>
@@ -106,9 +109,6 @@
                  <div class="lds-ring d-none" id="payment-spinner"><div></div><div></div><div></div><div></div></div>
                  <div class="tab-pane fade show active d-none" id="nav-tab-card">
                  <form role="form" action="/payments/charge" method="POST" id="card-info">
-                 <%if(error){%>
-                      <p class="alert alert-danger error-card"><%=error%></p>
-                 <%}%>
                  <p class="alert alert-danger error-card d-none" id="error-card"></p>
                  <div class="form-group">
                    <label for="username">Full name (on the card)</label>
@@ -164,6 +164,7 @@
            </div>
               <!--End Example 1-->
             <div class="tab-pane fade d-none" id="nav-tab-paypal">
+            <p class='alert alert-box--error d-none' id='error-paypal'>Payment processing failed. Try a different payment source.</p>
             <p>Paypal is the safest and easiest way to pay online</p>
             <p>
             <div id="paypal-button"></div>
@@ -262,6 +263,6 @@
   </footer>
             <script src="https://www.paypalobjects.com/api/checkout.js"></script>
             <script src="/payments/js/index.js"></script>
-            <script src="/payments/js/paymentWorker.js"></script>
+            <script src="/payments/js/paypal.js"></script>
     </body>
 </html>

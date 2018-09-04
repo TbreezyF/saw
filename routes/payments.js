@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const user = require('../models/user.js');
-const jwt = require('jsonwebtoken');
 const AWS = require('aws-sdk');
+const request = require('request-promise');
 const util = require('util');
 
 AWS.config.update({
@@ -17,18 +16,156 @@ const db = new AWS.DynamoDB.DocumentClient({
 const stripe = require("stripe")(process.env.STRIPE_KEY);
 
 router.get('/', (req, res)=>{
-    if(req.query.error){
-        return res.render('payments', {
-            error: req.query.error
-        });   
-    }
-    res.render('payments', {
-        error: false
-    });
+    return res.status(200).render('payments');
 });
 
 router.post('/paypal', async(req,res)=>{
+    let CLIENT = process.env.PAYPAL_CLIENT_ID;
+    let SECRET = process.env.PAYPAL_SECRET;
+    let PAYPAL_API = 'https://api.paypal.com';
+
+    if(req.query.auth == 'paypal' && req.query.amount){
+        let PAYMENT_INFO = {
+            auth:
+            {
+              user: CLIENT,
+              pass: SECRET
+            },
+            body:
+            {
+              intent: 'sale',
+              payer:
+              {
+                payment_method: 'paypal'
+              },
+              transactions: [
+              {
+                amount:
+                {
+                  total: req.query.amount,
+                  currency: 'CAD'
+                }
+              }],
+              redirect_urls:
+              {
+                return_url: 'https://sproft.com/payments/',
+                cancel_url: 'https://sproft.com/payments/'
+              }
+            },
+            json: true
+          };
+
+          try{
+            let response = await request.post(PAYPAL_API + '/v1/payments/payment', PAYMENT_INFO);
+            console.log('\nRESPONSE ID: ' + response.id);
+            return res.json({
+                id: response.id
+            });
+          }
+          catch(error){
+            console.log('\nPAYPAL PAYMENTS ERROR: ' + error);
+            return res.sendStatus(500);
+          }
+    }
+    else{
+        return res.status(403).redirect('https://sproft.com');
+    }
+});
+
+router.post('/paypal/execute', async(req, res)=>{
+    let CLIENT = process.env.PAYPAL_CLIENT_ID;
+    let SECRET = process.env.PAYPAL_SECRET;
+    let PAYPAL_API = 'https://api.paypal.com';
+    if(req.query.auth=='paypal' && req.query.amount){
+        let paymentID = req.body.paymentID;
+        let payerID = req.body.payerID;
     
+        let PAYMENT_INFO = {
+            auth:
+            {
+              user: CLIENT,
+              pass: SECRET
+            },
+            body:
+            {
+              payer_id: payerID,
+              transactions: [
+              {
+                amount:
+                {
+                  total: req.query.amount,
+                  currency: 'CAD'
+                }
+              }]
+            },
+            json: true
+          };
+
+          try{
+            let response = await request.post(PAYPAL_API + '/v1/payments/payment/' + paymentID + '/execute', PAYMENT_INFO);
+            res.json({
+                status: 'success'
+            });
+            let invoiceAmount = req.query.amount;
+            let clientNumber = req.query.id;
+            let invoiceNumber = Number(req.query.invoiceNumber);
+
+            let query = {
+                TableName: 'SproftMedia-Clients',
+                Key: {
+                    clientNumber: Number(clientNumber)
+                }
+            };
+
+            let clientInfo = await db.get(query).promise();
+            if(clientInfo.Item){
+                let invoices = clientInfo.Item.invoices;
+                let invoiceBalance, invoice, index;
+
+                for(let i=0; i<invoices.length; i++){
+                    if(invoices[i].invoiceNumber == invoiceNumber){
+                        invoiceBalance = Number(invoices[i].balance);
+                        index = i;
+                        break;
+                    }
+                }
+                
+                invoiceBalance -= Number(invoiceAmount);
+                invoices[index].balance = invoiceBalance;
+                let charges = invoices[index].charges;
+                charges.push(paymentID);
+                invoices[index].charges = charges;
+                let totalBalance = 0;
+
+                for(let i=0; i<invoices.length; i++){
+                    totalBalance += invoices[i].balance;
+                }
+
+                let query = {
+                    TableName: 'SproftMedia-Clients',
+                    Key: {
+                        clientNumber: Number(clientNumber)
+                    },
+                    UpdateExpression: 'set invoices = :i, totalBalance = :b',
+                    ExpressionAttributeValues: {
+                        ':i': invoices,
+                        ':b': totalBalance
+                    }
+                };
+
+                await db.update(query).promise();
+            }
+          }
+          catch(error){
+            console.log('\nPAYPAL PAYMENTS ERROR: ' + error);
+            return res.json({
+                error: true
+            });
+          }
+    }
+    else{
+        return res.status(403).redirect('https://sproft.com'); 
+    }
 });
 
 router.post('/charge', async (req, res)=>{
@@ -44,7 +181,7 @@ router.post('/charge', async (req, res)=>{
             }
         }, async function(err, token){
            if(err){
-            console.log(err.message);
+            console.log('\nSTRIPE PAYMENT ERROR: ' + err.message);
             return res.status(200).json({error: err.message});
            }
            else{
@@ -77,10 +214,10 @@ router.post('/charge', async (req, res)=>{
                     source: token.id,
                     description: `This charge was applied to Client Number: ${clientNumber} for invoice no. ${invoiceNumber}`,
                     capture: true,
-                    receipt_email: 'edwin.ifionu@gmail.com'
+                    receipt_email: clientInfo.Item.email
                 }, async function(err, charge){
                     if(err){
-                        console.log(err.message);
+                        console.log('STRIPE PAYMENT ERROR: ' + err.message);
                         return res.status(200).json({error: err.message})
                     }
                     else{
@@ -146,7 +283,7 @@ router.post('/clients', async(req, res)=>{
                 if(clientInfo.Item){
                     let invoices = clientInfo.Item.invoices;
                     let totalBalance = clientInfo.Item.totalBalance;
-                    if(invoices.length < 1 || totalBalance == 0){
+                    if(invoices.length < 1 || totalBalance <= 0){
                         error = "You don't appear to have any outstanding invoices.";
                         return res.status(200).json({error: error});   
                     }
